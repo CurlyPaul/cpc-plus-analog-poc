@@ -5,7 +5,7 @@ RUN start ; entry point
 start
 di
 im 1
-
+ld sp,#BFFF
 ld bc,#f782			;; setup initial PPI port directions
 out (c),c
 ld bc,#f400			;; set initial PPI port A (AY)

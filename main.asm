@@ -1,6 +1,6 @@
 ;call Screen_Init
-;ld hl,ColourPalette
-;call SetupColours
+ld hl,ColourPalette
+call SetupColours
 
 ;;--------------------------------------------------
 ;; STEP 1 - Unlock CPC+ additional features
