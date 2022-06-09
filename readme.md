@@ -1,4 +1,4 @@
-# gx4000-analog-demo
+# cpc-plus-analog-demo
 
 ## Introduction
 
