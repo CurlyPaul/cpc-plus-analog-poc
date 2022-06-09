@@ -33,9 +33,8 @@ Screen_Init:
 ret
 
 ClearScreen:
-	ld hl,(BackBufferAddress)
-	ld d,h
-	ld e,l
+	ld hl,#C000
+	ld de,hl
 	inc de
 	ld bc,#3FEE		;; Number of bytes to clear
 	ld (hl),a

@@ -1,7 +1,5 @@
-$name = "output"        ## 8 chars max
-$snapshotHeader = ".\debug.asm"
 $env = "c:\tools\cpc"
-$isDebug = 0
+$isDebug = 1
 
 $winape = Get-Process WinApe -ErrorAction SilentlyContinue
 if ($winape) {
@@ -12,14 +10,6 @@ if ($winape) {
 Remove-Variable winape
 
 Write-Host "Building.."
-
-## CPCDiskXP complains when it finds a file already with a header
-$binFile =  ".\artifacts\$name.bin"
-
-if(Test-Path $binFile)
-{
-    Remove-Item $binFile
-}
 
 if($isDebug){
 
@@ -43,5 +33,5 @@ else {
         exit
     }
 
-    Start-Process -FilePath "$env\WinApe\WinApe.exe" #-ArgumentList "/SN:$(Get-Location)\artifacts\release.sna /SYM:$(Get-Location)\artifacts\release.sym"
+    Start-Process -FilePath "$env\WinApe\WinApe.exe" 
 }

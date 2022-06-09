@@ -1,6 +1,14 @@
-;call Screen_Init
-ld hl,ColourPalette
-call SetupColours
+;; ******************************************************************************************************
+;; Sprite routines based largely on the example found at 
+;; https://www.cpcwiki.eu/index.php?title=Programming:CPC_Plus_Hardware_Sprites
+;; ******************************************************************************************************
+
+sprite_x equ 310
+sprite_y equ 100-32
+
+;; Cheat and just set everything to white
+ld e,BrightWhite
+call Palette_All
 
 ;;--------------------------------------------------
 ;; STEP 1 - Unlock CPC+ additional features
@@ -18,103 +26,122 @@ dec e
 jr nz,seq
 ei
 
-	;;--------------------------------------------------
-	;; STEP 2 - Setup sprite pixel data
-	;;
-	;; The ASIC has internal "RAM" used to store the sprite pixel
-	;; data. If you want to change the pixel data for a sprite
-	;; then you need to copy new data into the internal "RAM".
-di
-	;; page-in asic registers to #4000-#7fff
-	ld bc,#7fb8
-	out (c),c
+;;--------------------------------------------------
+;; STEP 2 - Setup sprite pixel data
+;;
+;; The ASIC has internal "RAM" used to store the sprite pixel
+;; data. If you want to change the pixel data for a sprite
+;; then you need to copy new data into the internal "RAM".
 
-	;; stored sprite pixel data
-	ld hl,PlumbusPlus
+;; page-in asic registers to #4000-#7fff
+ld bc,#7fb8
+out (c),c
 
-	;; address of sprite 0 pixel data
-	;; sprite 0 pixel data is in the range #4000-#4100
-	ld de,#4000
+;; stored sprite pixel data
+ld hl,PlumbusPlus
 
-	;; length of pixel data for a single sprite (16x16 = 256)
-	ld bc,#100
-	ldir
+;; address of sprite 0 pixel data
+;; sprite 0 pixel data is in the range #4000-#4100
+ld de,#4000
 
-	ld hl,PlumbusBottom
-	ld de,#4100
-	ld bc,#100
-	ldir
+;; length of pixel data for a single sprite (16x16 = 256)
+ld bc,#100
+ldir
 
-	;;--------------------------------------------------
-	;; STEP 3 - Setup sprite palette
-	;;
-	;; The sprites use a single 15 entry sprite palette.
-	;; pen 0 is ALWAYS transparent.
-	;;
-	;; The sprite palette is different to the screen palette.
+ld hl,PlumbusBottom
+ld de,#4100
+ld bc,#100
+ldir
 
-	;; copy colours into ASIC sprite palette registers
-	ld hl,sprite_colours
-	ld de,#6422
-	ld bc,15*2
-	ldir
+;;--------------------------------------------------
+;; STEP 3 - Setup sprite palette
+;;
+;; The sprites use a single 15 entry sprite palette.
+;; pen 0 is ALWAYS transparent.
+;;
+;; The sprite palette is different to the screen palette.
 
-	;;--------------------------------------------------
-	;; STEP 4 - Setup sprite properties
-	;;
-	;; Each sprite has properties which define the x,y coordinates 
-	;; and x,y magnification.
+;; copy colours into ASIC sprite palette registers
+ld hl,sprite_colours
+ld de,#6422
+ld bc,15*2
+ldir
 
-	;; page-in asic registers to #4000-#7fff
-	ld bc,#7fb8
-	out (c),c
+;;--------------------------------------------------
+;; STEP 4 - Setup sprite properties
+;;
+;; Each sprite has properties which define the x,y coordinates 
+;; and x,y magnification.
+ld bc, sprite_y
+ld de, sprite_x
+call SetSpritePosition
 
-	;; set x coordinate for sprite 0
-	ld hl,310
-	ld (#6000),hl
+;; set sprite x and y magnification
+;; x magnification = 1
+;; y magnification = 1
+ld a,10
+ld (#6004),a
 
-	;; set y coordinate for sprite 0
-	ld hl,100-32
-	ld (#6002),hl
-
-	ld hl,310
-	ld (#6008),hl
-	ld hl,100
-	ld (#600a),hl
-
-	;; set sprite x and y magnification
-	;; x magnification = 1
-	;; y magnification = 1
-	ld a,10
-	ld (#6004),a
-
-	ld a,10
-	ld (#600c),a
-
-	; ;; page-out asic registers
-	ld bc,#7fa0
-	out (c),c
-ei
+ld a,10
+ld (#600c),a
+	
 
 Sync:
 		ld b,#f5
         in a,(c)
         rra
     jr nc,Sync + 2
-	
-	;; page-in asic registers to #4000-#7fff
-	;ld bc,#7fb8
-	;out (c),c
-	
-	;; Check for Y
-	;ld hl,(#6809)	
-	
-	;; Check for X
-	;ld hl,(#6809)
 
-	;; Redraw sprite
+	;; Check for Y movement
+	ld h,0
+	ld a,(#6809)
+	ld l,#3F			;; HL now contains a value between 0 and 3f depending on the stick
+	ld bc,#003f/2		;; the centre point 
+	sbc hl,bc			;; adjust the numbers so they are central to zero
+	ld bc,sprite_y
+	adc hl,bc
+	ld bc,hl		;; bc = y
+
+	;; Check for X movement
+	ld h,0
+	ld a,(#6808)
+	ld l,#3f
+	ld de,#003f/2
+	sbc hl,de
+	
+	;; Seems like the x needs to be doubled to match the y movement
+	sla l	;; This can't overflow
+			
+	ld de,sprite_x
+	adc hl,de
+
+	ld de,hl		;; bc = x	
+	
+	call SetSpritePosition
 
 jr Sync
+
+SetSpritePosition
+;; Using a compound sprite and this routine keeps them both in sync
+;; INPUTS
+;; DE = X
+;; BC = Y
+;; DESTROYS HL, BC
+
+	;; set x coordinate for sprite 0
+	ld (#6000),de
+	;; set y coordinate for sprite 0
+	ld (#6002),bc
+
+	;; x is the same for the compound sprite
+	ld (#6008),de
+	
+	;; y needs to add the height of the sprite
+	ld hl,bc
+	ld bc,32
+	add hl,bc
+	ld (#600a),hl
+ret
 
 ;;--------------------------------------------------
 ;; - there is two bytes per colour.
@@ -143,6 +170,7 @@ defw #FFF
 ;;---------------------------------------------
 ;; - there is one pixel per byte (bits 3..0 of each byte define the palette index for this pixel)
 ;; - these bytes are stored in a form that can be written direct to the ASIC
+;; - Each alternate byte is always 0, so it's possible to compress this
 ;; sprite pixel data
 PlumbusPlus
 defb #00,#00,#00,#00,#00,#00,#00,#00,#01,#01,#01,#01,#00,#00,#00,#00; line 0

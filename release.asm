@@ -1,11 +1,14 @@
-BUILDCRT ; recommanded usage when using snapshot is to set it first
-BANK 0 ; assembling in first 64K
-ORG #0000 
-RUN start ; entry point
-start
+;;*****************************************************************************************
+;; Cart architecture based on example at https://cpctech.cpc-live.com/source/cart.html 
+;; With a few modifications as it didn't initially work for me
+;;****************************************************************************************
+BUILDCRT 
+BANK 0 
+ORG #0000
+
 di
 im 1
-ld sp,#BFFF
+ld sp,#BFFF         ;; this is missing from the og version and caused much confusion
 ld bc,#f782			;; setup initial PPI port directions
 out (c),c
 ld bc,#f400			;; set initial PPI port A (AY)
@@ -31,7 +34,7 @@ jp p,crtc_loop
 ei
 jr entrypoint
 
-ORG #0038
+ORG #0038           ;; Another change from the og code, as ld (#0038), hl won't work with the rom in the way
 ei
 ret
 
@@ -39,39 +42,7 @@ entrypoint
 
 include "main.asm"
 
-; ; Sets the screen to 16 colour/160 wide mode
-; ;	ld bc,#7F00+128+4+8+0
-; ;	out (c),c
-
-; ;call Screen_Init
-; ld hl,ColourPalette
-; call SetupColours
-
-; Sync:
-; 		ld b,#f5
-;         in a,(c)
-;         rra
-;     jr nc,Sync + 2
-; ;;	// TODO Something is amis here as the interupts keep switching off. There is some odd stuff in 0038
-; 	breakpoint
-
-; halt
-; 	;; page-in asic registers to #4000-#7fff
-; 	;ld bc,#7fb8
-; 	;out (c),c
-	
-; 	;; Check for Y
-; 	;ld hl,(#6809)	
-	
-; 	;; Check for X
-; 	;ld hl,(#6809)
-
-; 	;; Redraw sprite
-
-; jr Sync
-
-;include "main.asm"
-
+;; Currently set to normal mode 0
 crtc_data:
 defb #3f, #28, #2e, #8e, #26, #00, #19, #1e, #00, #07, #00,#00,#30,#00,#c0,#00
 end_crtc_data:

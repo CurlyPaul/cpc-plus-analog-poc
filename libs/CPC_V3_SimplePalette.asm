@@ -26,43 +26,43 @@ BrightWhite equ #4B		;; FMC 26
 
 
 ColourPalette: 
-defb BrightWhite	;; #0  
-defb Pink	 		;; #1 
-defb Orange 		;; #2  
-defb PastelMagenta	;; #3 
-defb Black 			;; #4 
-defb PastelYellow 	;; #5
-defb White 		;; #6
-defb #5E 		;; #7 
-defb #58 		;; #8 
-defb #5D 		;; #9 
-defb White 		;; #10
-defb #5B 		;; #11
-defb #4B 		;; #12
-defb #4C 		;; #13
-defb #54 		;; #14 
-defb #54 		;; #15 
-defb BrightWhite	;; Border
+defb BrightWhite		;; #0  
+defb Blue	 			;; #1 
+defb BrightWhite 		;; #2  
+defb BrightWhite		;; #3 
+defb BrightWhite 		;; #4 
+defb BrightWhite	 	;; #5
+defb BrightWhite 		;; #6
+defb BrightWhite 		;; #7 
+defb BrightWhite 		;; #8 
+defb BrightWhite 		;; #9 
+defb BrightWhite 		;; #10
+defb BrightWhite 		;; #11
+defb BrightWhite 		;; #12
+defb BrightWhite 		;; #12
+defb BrightWhite 		;; #13
+defb BrightWhite 		;; #14 
+defb BrightWhite 		;; #15 
+defb BrightWhite		;; Border
 
 Palette_Init:
 	ld hl,ColourPalette
 	call SetupColours
 ret
 
-Palette_AllBackground:
+Palette_All:
+	;; INPUTS
+	;; D = HW Colour 
 	ld b,17			;; 16 colours + 1 border
 	xor a			;; start with pen 0
-	ld e,Black
-DoColours_AllBlack:
-	push bc			;; need to stash b as we are using it for our loop and need it
-				;; below to write to the port 		
-	
+.doColours:
+	push bc			
 		ld bc,#7F00
      	out (c),a	;; PENR:#7F{pp} - where pp is the palette/pen number 
 		out (c),e	;; INKR:#7F{hc} - where hc is the hardware colour number
 	pop bc
 	inc a			;; increment pen number
-	djnz DoColours_AllBlack
+	djnz .doColours
 ret
 
 SetupColours:
